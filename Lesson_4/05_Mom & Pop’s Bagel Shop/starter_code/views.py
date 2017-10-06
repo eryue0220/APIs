@@ -3,11 +3,9 @@ from flask import Flask, jsonify, request, url_for, abort, g
 from sqlalchemy.ext.declarative import declarative_base
 from sqlalchemy.orm import relationship, sessionmaker
 from sqlalchemy import create_engine
-from flask.ext.httpauth import HTTPBasicAuth
+from flask_httpauth import HTTPBasicAuth
 
-auth = HTTPBasicAuth() 
-
-
+auth = HTTPBasicAuth()
 engine = create_engine('sqlite:///bagelShop.db')
 
 Base.metadata.bind = engine
@@ -15,18 +13,48 @@ DBSession = sessionmaker(bind=engine)
 session = DBSession()
 app = Flask(__name__)
 
-#ADD @auth.verify_password here
 
-#ADD a /users route here
+# ADD @auth.verify_password here
+@auth.verify_password
+def verify_password(username, password):
+    user = session.query(User).filter_by(username=username).first()
+    if not user:
+        print("User not found")
+        return False
+    elif not user.verify_password(password):
+        print('Wrong Password')
+        return False
+    g.user = user
+    return True
 
 
+# ADD a /users route here
+@app.route('/users', methods=['POST'])
+def new_user():
+    user_name = request.json.get('username')
+    password = request.json.get('password')
 
-@app.route('/bagels', methods = ['GET','POST'])
-#protect this route with a required login
+    if user_name is None or password is None:
+        abort(400)
+
+    if session.query(User).filter_by(username=user_name).first() is not None:
+        print("existing user")
+        user = session.query(User).filter_by(username=user_name).first()
+        return jsonify({'message':'user already exists'}), 200
+
+    user = User(username=user_name)
+    user.hash_password(password)
+    session.add(user)
+    session.commit()
+    return jsonify({'username': user_name}), 201
+
+
+@app.route('/bagels', methods=['GET','POST'])
+@auth.login_required
 def showAllBagels():
     if request.method == 'GET':
         bagels = session.query(Bagel).all()
-        return jsonify(bagels = [bagel.serialize for bagel in bagels])
+        return jsonify(bagels=[bagel.serialize for bagel in bagels])
     elif request.method == 'POST':
         name = request.json.get('name')
         description = request.json.get('description')
@@ -38,7 +66,6 @@ def showAllBagels():
         return jsonify(newBagel.serialize)
 
 
-
 if __name__ == '__main__':
     app.debug = True
-    app.run(host='0.0.0.0', port=5000)
+    app.run(host='127.0.0.1', port=5000)

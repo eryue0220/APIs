@@ -31,10 +31,10 @@ class User(Base):
     	try:
     		data = s.loads(token)
     	except SignatureExpired:
-    		#Valid Token, but expired
+    		# alid Token, but expired
     		return None
     	except BadSignature:
-    		#Invalid Token
+    		# Invalid Token
     		return None
     	user_id = data['id']
     	return user_id

@@ -23,7 +23,7 @@ app = Flask(__name__)
 
 
 app = Flask(__name__)
-#ADD RATE LIMITING CODE HERE
+# ADD RATE LIMITING CODE HERE
 
 
 
@@ -31,7 +31,7 @@ app = Flask(__name__)
 def getCatalog():
     items = session.query(Item).all()
 
-    #Populate an empty database
+    # Populate an empty database
     if items == []:
         item1 = Item(name="Pineapple", price="$2.50", picture="https://upload.wikimedia.org/wikipedia/commons/c/cb/Pineapple_and_cross_section.jpg", description="Organically Grown in Hawai'i")
         session.add(item1)
